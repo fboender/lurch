@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import json
+import tkinter
+import traceback
+import subprocess
+import tkinter.messagebox
+import time
+
+
+def do_autotype(gui, filter, entry):
+    """
+    Auto type value into the currently focusses window.
+    """
+    from pynput.keyboard import Key, Controller
+    gui.win_hide()
+    keyboard = Controller()
+    keyboard.type(entry['value'])
+    time.sleep(0.2)
+    keyboard.press(Key.enter)
+    time.sleep(0.2)
+    keyboard.release(Key.enter)
+    time.sleep(0.2)
+    gui.quit()
+
+def do_browser(gui, filter, entry):
+    """
+    Open value in browser. {q} is replaced with the filter typed by the user.
+    """
+    import webbrowser
+    url = entry["value"].format(filter=filter)
+    webbrowser.open_new_tab(url)
+    sys.exit(0)
+
+def do_exec(gui, filter, entry):
+    """
+    Execute value as a command.
+    """
+    subprocess.Popen(
+        entry["value"].format(filter=filter),
+        shell=entry.get("shell", False)
+    )
+    gui.quit()
+
+def do_totp(gui, filter, entry):
+    """
+    Generate TOTP / rfc6238 / two-factor / Google Authenticator authentication
+    codes, and autotype them.
+    """
+    import pyotp
+    from pynput.keyboard import Key, Controller
+    totp = pyotp.TOTP(entry["value"])
+    code = totp.now()
+    gui.win_hide()
+    keyboard = Controller()
+    keyboard.type(code)
+    gui.quit()
+
+
+do_mapper = {
+    "autotype": do_autotype,
+    "browser": do_browser,
+    "exec": do_exec,
+    "totp": do_totp,
+}
+
+
+class GUI:
+    def __init__(self, entries):
+        self.entries = entries
+        self.visible = False
+        self.cur_entries = entries
+
+        self.root = tkinter.Tk()
+        self.root.title("Lurch - You rang?")
+        imgicon = tkinter.PhotoImage(file=self._get_icon_path())
+        self.root.tk.call('wm', 'iconphoto', self.root._w, imgicon)
+        self.root.geometry('400x400')
+        self.root.report_callback_exception = self.report_callback_exception
+
+        self.filter_value = tkinter.StringVar()
+        self.filter_value.trace("w", lambda name, index, mode: self._input_activate())
+        self.filter = tkinter.Entry(textvariable=self.filter_value,
+                                   font=("Sans", 12), bd=8,
+                                   relief=tkinter.FLAT, bg="gray15",
+                                   fg="white", insertbackground="white")
+        self.filter.pack(side=tkinter.TOP, fill=tkinter.X)
+
+        scrollbar = tkinter.Scrollbar(self.root)
+        scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+
+        self.results = tkinter.Listbox(self.root, selectmode=tkinter.EXTENDED,
+                               yscrollcommand=scrollbar.set, font=("Sans", 12), bd=8, relief=tkinter.FLAT)
+        self.results.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.YES)
+        self.set_entries("")
+        scrollbar.config(command=self.results.yview)
+
+        self.root.bind("<Escape>", self.quit)
+        self.filter.bind("<Up>", self._results_cursor_up)
+        self.filter.bind("<Down>", self._results_cursor_down)
+        self.filter.bind("<Return>", self._results_activate)
+        self.results.bind("<Return>", self._results_activate)
+
+        self.filter.focus()
+
+    def _get_icon_path(self):
+        """
+        Return absolute path to icon, derefenced from the location of this
+        'binary'.
+        """
+        path = '{}/icon.png'.format(
+            os.path.realpath(os.path.dirname(os.readlink(sys.argv[0])))
+        )
+        return path
+
+    def _input_activate(self):
+        filter_value = self.filter_value.get()
+        self.set_entries(self.filter_value.get())
+
+    def set_entries(self, text):
+        text_lower = text.lower()
+        self.results.delete(0, tkinter.END)
+
+        for entry in self.entries:
+            if (
+                entry.get("always", False) is True or
+                (text == "" or text_lower in entry["title"].lower())
+            ):
+                self.results.insert(tkinter.END, entry["title"])
+
+        # Activate first item
+        if not self.results.curselection():
+            self.results.activate(0)
+            self.results.selection_set(0)
+
+    def _results_activate(self, event):
+        try:
+            try:
+                cursel = self.results.curselection()[0]
+            except IndexError:
+                return
+            cur_item = self.results.get(cursel)
+            filter = self.filter.get()
+            entry_search = cur_item
+
+            for entry in self.cur_entries:
+                if entry["title"] == entry_search:
+                    method = do_mapper[entry['type']]
+                    method(self, filter, entry)
+        except Exception as err:
+            raise
+
+    def _results_move_cur(self, i):
+        self.results.activate(i)
+        self.results.selection_clear(0, tkinter.END)
+        self.results.selection_set(i)
+        self.results.see(i)
+
+    def _results_cursor_up(self, event):
+        """
+        Move result pane cursor one up. Wrap around if top is hit.
+        """
+        cursel = self.results.curselection()[0]
+        if cursel == 0:
+            self._results_move_cur(tkinter.END)
+            return "break"
+        else:
+            self._results_move_cur(cursel - 1)
+
+    def _results_cursor_down(self, event):
+        """
+        Move result pane cursor one down. Wrap around if bottom is hit.
+        """
+        cursel = self.results.curselection()[0]
+        end = len(self.results.get(0, tkinter.END))
+        if cursel == end - 1:
+            self._results_move_cur(0)
+            return "break"
+        else:
+            self._results_move_cur(cursel + 1)
+
+    def win_hide(self):
+        """
+        Hide the window.
+        """
+        self.root.withdraw()
+        self.visible = False
+
+    def quit(self, event=None):
+        sys.exit(0)
+
+    def report_callback_exception(self, *args):
+        """
+        Show thrown exceptions in tkinter's main loop in a dialog
+        """
+        err = traceback.format_exception(*args)
+        tkinter.messagebox.showerror('Exception', str(args[1]))
+        raise
+
+def read_entries(lines):
+    required_keys = ("type", "title", "value")
+    entries = []
+    cur_entry = {}
+    for line in lines:
+        line = line.strip()
+        try:
+            if line == "":
+                assert(all([key in cur_entry for key in required_keys]))
+                entries.append(cur_entry)
+                cur_entry = {}
+            else:
+                key, value = [part.strip() for part in line.split(":", 1)]
+                if key in ("shell", "always"):
+                    cur_entry[key] = {"true": True, "false": False}[value.lower()]
+                else:
+                    cur_entry[key] = value
+        except Exception as err:
+            raise
+
+    # Add last entry, unless input ends with empty line
+    if cur_entry:
+        assert(all([key in cur_entry for key in required_keys]))
+        entries.append(cur_entry)
+
+    return entries
+
+if __name__ == "__main__":
+    gui = GUI(read_entries(sys.stdin.readlines()))
+    tkinter.mainloop()
