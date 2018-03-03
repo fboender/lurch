@@ -126,15 +126,21 @@ class GUI:
         self.set_entries(self.filter_value.get())
 
     def set_entries(self, text):
-        text_lower = text.lower()
         self.results.delete(0, tkinter.END)
 
-        for entry in self.entries:
-            if (
-                entry.get("always", False) is True or
-                (text == "" or text_lower in entry["title"].lower())
-            ):
-                self.results.insert(tkinter.END, entry["title"])
+        match_entries = self.entries
+        if text != "":
+            # Filter entries
+            parts = text.lower().split(' ')
+            for part in parts:
+                match_entries = [
+                    entry for entry in match_entries
+                    if part in entry["title"].lower() or
+                       entry.get("always", False) is True
+                ]
+
+        for entry in match_entries:
+            self.results.insert(tkinter.END, entry["title"])
 
         # Activate first item
         if not self.results.curselection():
