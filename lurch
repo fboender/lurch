@@ -111,8 +111,13 @@ class GUI:
         Return absolute path to icon, derefenced from the location of this
         'binary'.
         """
+        if os.path.islink(sys.argv[0]):
+            bin_path = os.readlink(sys.argv[0])
+        else:
+            bin_path = sys.argv[0]
+
         path = '{}/icon.png'.format(
-            os.path.realpath(os.path.dirname(os.readlink(sys.argv[0])))
+            os.path.realpath(os.path.dirname(bin_path))
         )
         return path
 
