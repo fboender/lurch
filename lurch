@@ -91,8 +91,9 @@ class GUI:
         scrollbar = tkinter.Scrollbar(self.root)
         scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
 
-        self.results = tkinter.Listbox(self.root, selectmode=tkinter.EXTENDED,
-                               yscrollcommand=scrollbar.set, font=("Sans", 12), bd=8, relief=tkinter.FLAT)
+        self.results = tkinter.Listbox(self.root, selectmode=tkinter.BROWSE,
+                               yscrollcommand=scrollbar.set, font=("Sans", 12),
+                               bd=8, relief=tkinter.FLAT, exportselection=0)
         self.results.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.YES)
         self.set_entries("")
         scrollbar.config(command=self.results.yview)
