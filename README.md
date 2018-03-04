@@ -149,6 +149,12 @@ The types should speak for themselves. Some take extra options:
     I'm sorry! I'm very pressed for time, so I don't like wasting it on
     non-essential things. Being polite is not essential in this case. ;-)
 
+* **How do I get TOTP shared secret keys?**
+
+    I got them from Authy using
+    https://gist.github.com/tresni/83b9181588c7393f6853#gistcomment-2024680
+    and https://gist.github.com/Ingramz/14a9c39f8c306a2d43b4
+
 ## License
 
 MIT License
