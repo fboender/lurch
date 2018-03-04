@@ -13,8 +13,8 @@ multiple Lurches that do different things and even Lurches that launch
 sub-lurches.
 
 **NO SUPPORT: There is absolutely ZERO support on this project. Due to time
-constraints, I don't take bug or features reports and probably won't accept
-your pull requests.**
+constraints, I don't take bug reports or feature requests and probably won't
+accept your pull requests.**
 
 This is what it looks like. Ugly, but effective.
 
@@ -59,6 +59,10 @@ You can use and combine these features to do many things:
     sudo apt install python3-tk
     make install
 
+If `pynput` installation borks, download the .egg from
+https://pypi.python.org/pypi/pynput, unzip it and copy the `pynput` dir to
+your `dist-packages` dir. It seems to work in a virtualenv, but not when
+installing globally.
 
 ## Usage
 
@@ -103,7 +107,7 @@ such as entries to ssh to all the hosts in your `~/.ssh/config` file, XDG
 Desktop entries, passwords from your password manager, directories to switch
 to, etc. *Some assembly required*.
 
-An example generator is included: `gen_entries.sh`. It may or may not work
+An example generator is included: `gen_entries.py`. It may or may not work
 properly for you. Build your own.
 
 Each item in the list takes a few default keys:
