@@ -6,6 +6,7 @@ Example file for generating Lurch entries.
 
 import os
 import sys
+import json
 import subprocess
 
 def entry(type, title, value, **options):
@@ -72,6 +73,23 @@ except Exception as err:
 
 #TOTP / rfc6238 / two-factor / Google Authenticator
 entry("totp", "totp github fboender", "qvnrFAKEg2cs5cgw")
+
+# Chrome bookmarks
+include_folders = ["/Check Later/News", "/Tools"]
+def walk_bookmarks(tree, cur_path="", include=False):
+    if cur_path in include_folders:
+        include = True
+    for child in tree["children"]:
+        if child["type"] == "folder":
+            walk_bookmarks(child, cur_path + "/" + child["name"], include)
+        elif include is True:
+            entry("browser", "bookmark {}".format(child["name"]), child["url"])
+
+try:
+    bookmarks = json.load(open(os.path.expanduser('~/.config/google-chrome/Default/Bookmarks'), 'r'))
+    walk_bookmarks(bookmarks["roots"]["bookmark_bar"])
+except Exception:
+    pass
 
 # Custom manual entries
 entry("browser", "web search", "https://www.startpage.com/do/asearch?query={filter}", always=True)

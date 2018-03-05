@@ -40,6 +40,7 @@ You can use and combine these features to do many things:
 * Open browser tabs and search via google or specific search engines.
 * List all entries in your SSH configuration and quickly launch an ssh session
   to one of them.
+* List and open Chrome bookmarks.
 * Etc.
 
 
