@@ -12,6 +12,9 @@ def entry(type, title, value, **options):
     """
     Helper to generate entries.
     """
+    title = ''.join([x for x in title if ord(x) < 65534])
+    value = ''.join([x for x in value if ord(x) < 65534])
+
     print("type: {}\ntitle: {}\nvalue: {}".format(type,
                                                   title,
                                                   value))
