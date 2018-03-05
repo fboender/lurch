@@ -32,7 +32,7 @@ def do_browser(gui, filter, entry):
     import webbrowser
     url = entry["value"].format(filter=filter)
     webbrowser.open_new_tab(url)
-    sys.exit(0)
+    gui.quit()
 
 def do_exec(gui, filter, entry):
     """
@@ -206,7 +206,7 @@ class GUI:
         self.visible = False
 
     def quit(self, event=None):
-        sys.exit(0)
+        self.root.quit()
 
     def report_callback_exception(self, *args):
         """
