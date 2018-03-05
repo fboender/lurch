@@ -28,6 +28,7 @@ entry("autotype", "pass example.com ssh", "mys3cr3t")
 entry("autotype", "pass example.com web", "@dm1ns3cr3t")
 
 # Custom commands
+entry("exec", "cmd generate password", "pwgen 24", shell=True, output_inline=True)
 entry("exec", "cmd edit SSH configuration", "xterm -e vi ~/.ssh/config", shell=True)
 
 # Desktop entries
