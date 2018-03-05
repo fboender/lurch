@@ -46,7 +46,7 @@ def do_exec(gui, filter, entry):
     )
     res = p.communicate()
     if entry.get('display', False) is True:
-        tkinter.messagebox.showinfo('output', res[0])
+        msg(res[0])
     gui.quit()
 
 def do_totp(gui, filter, entry):
@@ -70,6 +70,22 @@ do_mapper = {
     "exec": do_exec,
     "totp": do_totp,
 }
+
+
+def msg(value):
+    root = tkinter.Tk()
+    root.title("Output")
+    def quiet():
+        sys.exit(0)
+    text = tkinter.Text(root, height=25, width=80, bg="black", fg="white", relief=tkinter.FLAT)
+    text.insert(tkinter.END, value)
+    scrollbar = tkinter.Scrollbar(root)
+    scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+    scrollbar.config(command=text.yview)
+    text.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.YES)
+    text.config(yscrollcommand=scrollbar.set)
+    root.bind("<Escape>", quit)
+    tkinter.mainloop()
 
 
 class GUI:
