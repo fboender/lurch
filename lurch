@@ -38,10 +38,15 @@ def do_exec(gui, filter, entry):
     """
     Execute value as a command.
     """
-    subprocess.Popen(
+    p = subprocess.Popen(
         entry["value"].format(filter=filter),
-        shell=entry.get("shell", False)
+        shell=entry.get("shell", False),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
     )
+    res = p.communicate()
+    if entry.get('display', False) is True:
+        tkinter.messagebox.showinfo('output', res[0])
     gui.quit()
 
 def do_totp(gui, filter, entry):
@@ -224,7 +229,7 @@ def read_entries(lines):
                 cur_entry = {}
             else:
                 key, value = [part.strip() for part in line.split(":", 1)]
-                if key in ("shell", "always"):
+                if key in ("shell", "always", "display"):
                     cur_entry[key] = {"true": True, "false": False}[value.lower()]
                 else:
                     cur_entry[key] = value
