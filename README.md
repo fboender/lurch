@@ -156,6 +156,7 @@ The types should speak for themselves. Some take extra options:
     https://gist.github.com/tresni/83b9181588c7393f6853#gistcomment-2024680
     and https://gist.github.com/Ingramz/14a9c39f8c306a2d43b4
 
+
 ## License
 
 MIT License
