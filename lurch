@@ -3,7 +3,7 @@
 import os
 import sys
 import json
-import tkinter
+import tkinter as tk
 import traceback
 import subprocess
 import tkinter.messagebox
@@ -39,14 +39,27 @@ def do_exec(gui, filter, entry):
     Execute value as a command.
     """
     p = subprocess.Popen(
-        entry["value"].format(filter=filter),
+        entry["value"].replace('{filter}', filter),
         shell=entry.get("shell", False),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT
     )
-    res = p.communicate()
-    if entry.get('show_output', False) is True:
-        msg(res[0])
+    output = p.communicate()[0]
+
+    # Clear filter typed by user
+    if entry.get('clear_input', True) is True:
+        gui.filter_value.set("")
+
+    if entry.get('output_win', False) is True:
+        msg(output)
+    elif entry.get('output_inline', False) is True:
+        gui.output.insert(tkinter.END, "\n")
+        gui.output.insert(tkinter.END, output.rstrip())
+        gui.output.see(tkinter.END)
+        gui.output_scrbr.grid(row=1, column=1, sticky="ns")
+        gui.output.grid(row=1, column=0, sticky="nsew")
+        return
+
     gui.quit()
 
 def do_totp(gui, filter, entry):
@@ -101,23 +114,17 @@ class GUI:
         self.root.geometry('400x400')
         self.root.report_callback_exception = self.report_callback_exception
 
-        self.filter_value = tkinter.StringVar()
-        self.filter_value.trace("w", lambda name, index, mode: self._input_activate())
-        self.filter = tkinter.Entry(textvariable=self.filter_value,
-                                   font=("Sans", 12), bd=8,
-                                   relief=tkinter.FLAT, bg="gray15",
-                                   fg="white", insertbackground="white")
-        self.filter.pack(side=tkinter.TOP, fill=tkinter.X)
+        self.frame = tk.Frame(self.root, borderwidth=0, relief="flat")
+        self._mkwidget_filter()
+        self._mkwidget_output()
+        self._mkwidget_results()
 
-        scrollbar = tkinter.Scrollbar(self.root)
-        scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+        self.frame.grid_rowconfigure(0, weight=0)
+        self.frame.grid_rowconfigure(1, weight=0)
+        self.frame.grid_rowconfigure(2, weight=1)
+        self.frame.grid_columnconfigure(0, weight=1)
 
-        self.results = tkinter.Listbox(self.root, selectmode=tkinter.BROWSE,
-                               yscrollcommand=scrollbar.set, font=("Sans", 12),
-                               bd=8, relief=tkinter.FLAT, exportselection=0)
-        self.results.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.YES)
         self.set_entries("")
-        scrollbar.config(command=self.results.yview)
 
         self.root.bind("<Escape>", self.quit)
         self.filter.bind("<Up>", self._results_cursor_up)
@@ -125,7 +132,35 @@ class GUI:
         self.filter.bind("<Return>", self._results_activate)
         self.results.bind("<Return>", self._results_activate)
 
+        self.frame.pack(side="top", fill="both", expand=True)
+        self.root.mainloop()
+
+    def _mkwidget_filter(self):
+        self.filter_value = tk.StringVar()
+        self.filter_value.trace("w", lambda name, index, mode: self._input_activate())
+        self.filter = tk.Entry(self.frame, textvariable=self.filter_value,
+                               font=("Sans", 12), bg="gray15", fg="white",
+                               relief="flat", bd=8, insertbackground="white")
+        self.filter.grid(row=0, columnspan=2, sticky="ew")
         self.filter.focus()
+
+    def _mkwidget_output(self):
+        self.output = tk.Text(self.frame, width=20, height=4, wrap="none",
+                              borderwidth=8, highlightthickness=0, bg="black",
+                              fg="white", bd=8, relief="flat")
+        self.output_scrbr = tk.Scrollbar(self.frame, orient="vertical",
+                                         command=self.output.yview)
+        self.output.configure(yscrollcommand=self.output_scrbr.set)
+
+    def _mkwidget_results(self):
+        self.results = tk.Listbox(self.frame, selectmode=tk.BROWSE,
+                                  font=("Sans", 12), bd=8, relief=tk.FLAT,
+                                  exportselection=0)
+        self.results_scrbr = tk.Scrollbar(self.frame, orient="vertical",
+                                          command=self.results.yview)
+        self.results.configure(yscrollcommand=self.results_scrbr.set)
+        self.results.grid(row=2, column=0, sticky="nsew")
+        self.results_scrbr.grid(row=2, column=1, sticky="ns")
 
     def _get_icon_path(self):
         """
@@ -147,7 +182,7 @@ class GUI:
         self.set_entries(self.filter_value.get())
 
     def set_entries(self, text):
-        self.results.delete(0, tkinter.END)
+        self.results.delete(0, tk.END)
 
         match_entries = self.entries
         if text != "":
@@ -161,7 +196,7 @@ class GUI:
                 ]
 
         for entry in match_entries:
-            self.results.insert(tkinter.END, entry["title"])
+            self.results.insert(tk.END, entry["title"])
 
         # Activate first item
         if not self.results.curselection():
@@ -187,7 +222,7 @@ class GUI:
 
     def _results_move_cur(self, i):
         self.results.activate(i)
-        self.results.selection_clear(0, tkinter.END)
+        self.results.selection_clear(0, tk.END)
         self.results.selection_set(i)
         self.results.see(i)
 
@@ -197,7 +232,7 @@ class GUI:
         """
         cursel = self.results.curselection()[0]
         if cursel == 0:
-            self._results_move_cur(tkinter.END)
+            self._results_move_cur(tk.END)
             return "break"
         else:
             self._results_move_cur(cursel - 1)
@@ -207,7 +242,7 @@ class GUI:
         Move result pane cursor one down. Wrap around if bottom is hit.
         """
         cursel = self.results.curselection()[0]
-        end = len(self.results.get(0, tkinter.END))
+        end = len(self.results.get(0, tk.END))
         if cursel == end - 1:
             self._results_move_cur(0)
             return "break"
@@ -233,6 +268,7 @@ class GUI:
         raise
 
 def read_entries(lines):
+    bool_keys = ("shell", "always", "output_win", "output_inline", "clear_input")
     required_keys = ("type", "title", "value")
     entries = []
     cur_entry = {}
@@ -245,7 +281,7 @@ def read_entries(lines):
                 cur_entry = {}
             else:
                 key, value = [part.strip() for part in line.split(":", 1)]
-                if key in ("shell", "always", "show_output"):
+                if key in bool_keys:
                     cur_entry[key] = {"true": True, "false": False}[value.lower()]
                 else:
                     cur_entry[key] = value
@@ -261,4 +297,3 @@ def read_entries(lines):
 
 if __name__ == "__main__":
     gui = GUI(read_entries(sys.stdin.readlines()))
-    tkinter.mainloop()

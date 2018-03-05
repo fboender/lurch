@@ -20,6 +20,12 @@ This is what it looks like. Ugly, but effective.
 
 ![](https://raw.githubusercontent.com/fboender/lurch/master/screenshot.png)
 
+It also has a tiny embedded console that's not really a console but just a
+text widget. Specify `output_inline` to send command output to it. This keeps
+the window open.
+
+![](https://raw.githubusercontent.com/fboender/lurch/master/screenshot2.png)
+
 ## Features
 
 * Fuzzy filtering as-you-type.
@@ -28,6 +34,7 @@ This is what it looks like. Ugly, but effective.
 * Auto-type into currently focussed window
 * Auto-type TOTP / rfc6238 / two-factor / Google Authenticator codes.
 * Unixy and composable. Reads entries from stdin.
+* Display command execution output inline or in a popup window.
 
 You can use and combine these features to do many things:
 
@@ -38,6 +45,8 @@ You can use and combine these features to do many things:
   .desktop entries or whatever.
 * Quickly `cd` to parts of your filesystem using auto-type.
 * Open browser tabs and search via google or specific search engines.
+* Calculate what you typed in and display the result. Or really the result of
+  any command with as input whatever you typed in the filter box.
 * List all entries in your SSH configuration and quickly launch an ssh session
   to one of them.
 * List and open Chrome bookmarks.
@@ -122,7 +131,10 @@ The types should speak for themselves. Some take extra options:
 
 * **`exec`**:
     * `shell`: Launch the command in a shell. Defaults to `false`.
-    * `show_output`: Display output of command in dialog box. Defaults to `false`.
+    * `output_win`: Display output of command in popup window. Defaults to `false`.
+    * `output_inline`: Display output of command in embedded "console". Also
+      keeps the window open.
+    * `clear_input`: Clear input after activation.
 
 ## Frequently Asked Questions I made up
 

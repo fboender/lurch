@@ -92,5 +92,6 @@ except Exception:
     pass
 
 # Custom manual entries
+entry("exec", "calculate", """python -c 'print("{filter} = {}".format(eval("{filter}")))'""", shell=True, always=True, output_inline=True, clear_input=False)
 entry("browser", "web search", "https://www.startpage.com/do/asearch?query={filter}", always=True)
 entry("browser", "wikipedia search", "https://en.wikipedia.org/wiki/Special:Search?search={filter}&go=Go", always=True)
