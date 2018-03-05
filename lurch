@@ -131,6 +131,7 @@ class GUI:
         self.filter.bind("<Down>", self._results_cursor_down)
         self.filter.bind("<Return>", self._results_activate)
         self.results.bind("<Return>", self._results_activate)
+        self.results.bind('<Double-1>', self._results_activate)
 
         self.frame.pack(side="top", fill="both", expand=True)
         self.root.mainloop()
