@@ -45,7 +45,7 @@ def do_exec(gui, filter, entry):
         stderr=subprocess.STDOUT
     )
     res = p.communicate()
-    if entry.get('display', False) is True:
+    if entry.get('show_output', False) is True:
         msg(res[0])
     gui.quit()
 
@@ -245,7 +245,7 @@ def read_entries(lines):
                 cur_entry = {}
             else:
                 key, value = [part.strip() for part in line.split(":", 1)]
-                if key in ("shell", "always", "display"):
+                if key in ("shell", "always", "show_output"):
                     cur_entry[key] = {"true": True, "false": False}[value.lower()]
                 else:
                     cur_entry[key] = value

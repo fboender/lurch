@@ -122,7 +122,7 @@ The types should speak for themselves. Some take extra options:
 
 * **`exec`**:
     * `shell`: Launch the command in a shell. Defaults to `false`.
-    * `display`: Display output of command in dialog box. Defaults to `false`.
+    * `show_output`: Display output of command in dialog box. Defaults to `false`.
 
 ## Frequently Asked Questions I made up
 
