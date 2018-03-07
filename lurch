@@ -38,13 +38,20 @@ def do_exec(gui, filter, entry):
     """
     Execute value as a command.
     """
-    p = subprocess.Popen(
-        entry["value"].replace('{filter}', filter),
-        shell=entry.get("shell", False),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT
-    )
-    output = p.communicate()[0]
+    if (entry.get("output_win", False) is True or
+        entry.get("output_inline", False) is True):
+        p = subprocess.Popen(
+            entry["value"].replace('{filter}', filter),
+            shell=entry.get("shell", False),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+        )
+        output = p.communicate()[0]
+    else:
+        p = subprocess.Popen(
+            entry["value"].replace('{filter}', filter),
+            shell=entry.get("shell", False),
+        )
 
     # Clear filter typed by user
     if entry.get('clear_input', True) is True:
