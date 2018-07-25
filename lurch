@@ -135,7 +135,9 @@ class GUI:
 
         self.root.bind("<Escape>", self.quit)
         self.filter.bind("<Up>", self._results_cursor_up)
+        self.filter.bind("<Control-k>", self._results_cursor_up)
         self.filter.bind("<Down>", self._results_cursor_down)
+        self.filter.bind("<Control-j>", self._results_cursor_down)
         self.filter.bind("<Return>", self._results_activate)
         self.results.bind("<Return>", self._results_activate)
         self.results.bind('<Double-1>', self._results_activate)
