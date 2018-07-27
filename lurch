@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import argparse
 import sys
 import json
 import tkinter as tk
@@ -109,7 +110,9 @@ def msg(value):
 
 
 class GUI:
-    def __init__(self, entries):
+    def __init__(self, width, height, entries):
+        self.width = width
+        self.height = height
         self.entries = entries
         self.visible = False
         self.cur_entries = entries
@@ -118,7 +121,7 @@ class GUI:
         self.root.title("Lurch - You rang?")
         imgicon = tkinter.PhotoImage(file=self._get_icon_path())
         self.root.tk.call('wm', 'iconphoto', self.root._w, imgicon)
-        self.root.geometry('400x400')
+        self.root.geometry('{}x{}'.format(self.width, self.height))
         self.root.report_callback_exception = self.report_callback_exception
 
         self.frame = tk.Frame(self.root, borderwidth=0, relief="flat")
@@ -306,4 +309,9 @@ def read_entries(lines):
     return entries
 
 if __name__ == "__main__":
-    gui = GUI(read_entries(sys.stdin.readlines()))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--width', metavar='WIDTH', dest='width', type=int, default=500)
+    parser.add_argument('--height', metavar='HEIGHT', dest='height', type=int, default=600)
+    args = parser.parse_args()
+
+    gui = GUI(args.width, args.height, read_entries(sys.stdin.readlines()))
