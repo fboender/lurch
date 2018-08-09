@@ -61,8 +61,8 @@ def do_exec(gui, filter, entry):
     if entry.get('output_win', False) is True:
         msg(output)
     elif entry.get('output_inline', False) is True:
-        gui.output.insert(tkinter.END, "\n")
         gui.output.insert(tkinter.END, output.rstrip())
+        gui.output.insert(tkinter.END, "\n\n")
         gui.output.see(tkinter.END)
         gui.output_scrbr.grid(row=1, column=1, sticky="ns")
         gui.output.grid(row=1, column=0, sticky="nsew")
