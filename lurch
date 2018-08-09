@@ -37,8 +37,11 @@ def do_browser(gui, filter, entry):
 
 def do_exec(gui, filter, entry):
     """
-    Execute value as a command.
+    Execute value as a command. Optionally capture the output and show it in
+    the console.
     """
+    # If we need to capture output of the command, do so. Otherwise, just run
+    # it.
     if (entry.get("output_win", False) is True or
         entry.get("output_inline", False) is True):
         p = subprocess.Popen(
@@ -58,12 +61,17 @@ def do_exec(gui, filter, entry):
     if entry.get('clear_input', True) is True:
         gui.filter_value.set("")
 
+    # Display command output in seperate window, or in the inline console.
     if entry.get('output_win', False) is True:
         msg(output)
     elif entry.get('output_inline', False) is True:
         gui.output.insert(tkinter.END, output.rstrip())
         gui.output.insert(tkinter.END, "\n\n")
+
+        # Scroll to end
         gui.output.see(tkinter.END)
+
+        # Show the inline console, in case it was hidden.
         gui.output_scrbr.grid(row=1, column=1, sticky="ns")
         gui.output.grid(row=1, column=0, sticky="nsew")
         return
@@ -94,6 +102,9 @@ do_mapper = {
 
 
 def msg(value):
+    """
+    Show a popup message window with a 'console'.
+    """
     root = tkinter.Tk()
     root.title("Output")
     def quiet():
@@ -110,6 +121,9 @@ def msg(value):
 
 
 class GUI:
+    """
+    Main Lurch GUI.
+    """
     def __init__(self, width, height, console_lines, entries):
         self.width = width
         self.height = height
@@ -192,10 +206,18 @@ class GUI:
         return path
 
     def _input_activate(self):
+        """
+        When the input field is activcated (enter or double click), perform the
+        action under the cursor.
+        """
         filter_value = self.filter_value.get()
         self.set_entries(self.filter_value.get())
 
     def set_entries(self, text):
+        """
+        Update the list of entries in Lurch and fuzzy-filter the entries based
+        on what the user typed so far.
+        """
         self.results.delete(0, tk.END)
 
         match_entries = self.entries
@@ -235,6 +257,9 @@ class GUI:
             raise
 
     def _results_move_cur(self, i):
+        """
+        Move the entries cursor.
+        """
         self.results.activate(i)
         self.results.selection_clear(0, tk.END)
         self.results.selection_set(i)
@@ -282,6 +307,10 @@ class GUI:
         raise
 
 def read_entries(lines):
+    """
+    Parse `lines` (stdin, usually) into actual entries that lurch can use.
+    Entries are separated with two newlines in `lines` (a.k.a. one empty line).
+    """
     bool_keys = ("shell", "always", "output_win", "output_inline", "clear_input")
     required_keys = ("type", "title", "value")
     entries = []
@@ -290,10 +319,13 @@ def read_entries(lines):
         line = line.strip()
         try:
             if line == "":
+                # End of current entry. Make sure the user has specified all
+                # required keys
                 assert(all([key in cur_entry for key in required_keys]))
                 entries.append(cur_entry)
                 cur_entry = {}
             else:
+                # Additional key/value for current entry.
                 key, value = [part.strip() for part in line.split(":", 1)]
                 if key in bool_keys:
                     cur_entry[key] = {"true": True, "false": False}[value.lower()]
