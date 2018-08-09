@@ -77,7 +77,8 @@ def do_exec(gui, filter, entry):
         gui.output.see(tkinter.END)
 
         # Show the inline console, in case it was hidden.
-        gui.output_scrbr.grid(row=1, column=1, sticky="ns")
+        gui.output_scrbr_y.grid(row=1, column=1, sticky="ns")
+        gui.output_scrbr_x.grid(row=2, column=0, sticky="we")
         gui.output.grid(row=1, column=0, sticky="nsew")
         return
 
@@ -125,6 +126,18 @@ def msg(value):
     tkinter.mainloop()
 
 
+class AutoScrollbar(tkinter.Scrollbar):
+    # a scrollbar that hides itself if it's not needed.  only
+    # works if you use the grid geometry manager.
+    def set(self, lo, hi):
+        if float(lo) <= 0.0 and float(hi) >= 1.0:
+            # grid_remove is currently missing from Tkinter!
+            self.tk.call("grid", "remove", self)
+        else:
+            self.grid()
+        tkinter.Scrollbar.set(self, lo, hi)
+
+
 class GUI:
     """
     Main Lurch GUI.
@@ -151,7 +164,8 @@ class GUI:
 
         self.frame.grid_rowconfigure(0, weight=0)
         self.frame.grid_rowconfigure(1, weight=0)
-        self.frame.grid_rowconfigure(2, weight=1)
+        self.frame.grid_rowconfigure(2, weight=0)
+        self.frame.grid_rowconfigure(3, weight=1)
         self.frame.grid_columnconfigure(0, weight=1)
 
         self.set_entries("")
@@ -178,12 +192,15 @@ class GUI:
         self.filter.focus()
 
     def _mkwidget_output(self, console_lines=6):
+        self.output_scrbr_x = AutoScrollbar(self.frame, orient="horizontal")
+        self.output_scrbr_y = tk.Scrollbar(self.frame, orient="vertical")
         self.output = tk.Text(self.frame, width=20, height=console_lines,
                               wrap="none", borderwidth=8, highlightthickness=0,
-                              bg="black", fg="white", bd=8, relief="flat")
-        self.output_scrbr = tk.Scrollbar(self.frame, orient="vertical",
-                                         command=self.output.yview)
-        self.output.configure(yscrollcommand=self.output_scrbr.set)
+                              bg="black", fg="white", bd=8, relief="flat",
+                              xscrollcommand=self.output_scrbr_x.set,
+                              yscrollcommand=self.output_scrbr_y.set)
+        self.output_scrbr_x.config(command=self.output.xview)
+        self.output_scrbr_y.config(command=self.output.yview)
 
     def _mkwidget_results(self):
         self.results = tk.Listbox(self.frame, selectmode=tk.BROWSE,
@@ -192,8 +209,8 @@ class GUI:
         self.results_scrbr = tk.Scrollbar(self.frame, orient="vertical",
                                           command=self.results.yview)
         self.results.configure(yscrollcommand=self.results_scrbr.set)
-        self.results.grid(row=2, column=0, sticky="nsew")
-        self.results_scrbr.grid(row=2, column=1, sticky="ns")
+        self.results.grid(row=3, column=0, sticky="nsew")
+        self.results_scrbr.grid(row=3, column=1, sticky="ns")
 
     def _get_icon_path(self):
         """
