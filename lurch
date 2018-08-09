@@ -110,9 +110,10 @@ def msg(value):
 
 
 class GUI:
-    def __init__(self, width, height, entries):
+    def __init__(self, width, height, console_lines, entries):
         self.width = width
         self.height = height
+        self.console_lines = console_lines
         self.entries = entries
         self.visible = False
         self.cur_entries = entries
@@ -126,7 +127,7 @@ class GUI:
 
         self.frame = tk.Frame(self.root, borderwidth=0, relief="flat")
         self._mkwidget_filter()
-        self._mkwidget_output()
+        self._mkwidget_output(console_lines)
         self._mkwidget_results()
 
         self.frame.grid_rowconfigure(0, weight=0)
@@ -157,10 +158,10 @@ class GUI:
         self.filter.grid(row=0, columnspan=2, sticky="ew")
         self.filter.focus()
 
-    def _mkwidget_output(self):
-        self.output = tk.Text(self.frame, width=20, height=4, wrap="none",
-                              borderwidth=8, highlightthickness=0, bg="black",
-                              fg="white", bd=8, relief="flat")
+    def _mkwidget_output(self, console_lines=6):
+        self.output = tk.Text(self.frame, width=20, height=console_lines,
+                              wrap="none", borderwidth=8, highlightthickness=0,
+                              bg="black", fg="white", bd=8, relief="flat")
         self.output_scrbr = tk.Scrollbar(self.frame, orient="vertical",
                                          command=self.output.yview)
         self.output.configure(yscrollcommand=self.output_scrbr.set)
@@ -312,6 +313,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--width', metavar='WIDTH', dest='width', type=int, default=500)
     parser.add_argument('--height', metavar='HEIGHT', dest='height', type=int, default=600)
+    parser.add_argument('--console-lines', metavar='CONSOLE_LINES', dest='console_lines', type=int, default=6)
     args = parser.parse_args()
 
-    gui = GUI(args.width, args.height, read_entries(sys.stdin.readlines()))
+    gui = GUI(args.width, args.height, args.console_lines, read_entries(sys.stdin.readlines()))
