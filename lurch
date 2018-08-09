@@ -65,8 +65,13 @@ def do_exec(gui, filter, entry):
     if entry.get('output_win', False) is True:
         msg(output)
     elif entry.get('output_inline', False) is True:
+        # If we already sent some output to the inline console, add an empty
+        # line before the new contents.
+        output_text = gui.output.get(1.0, tkinter.END)
+        if len(output_text) > 1:
+            gui.output.insert(tkinter.END, "\n\n")
+
         gui.output.insert(tkinter.END, output.rstrip())
-        gui.output.insert(tkinter.END, "\n\n")
 
         # Scroll to end
         gui.output.see(tkinter.END)
