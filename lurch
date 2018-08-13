@@ -65,21 +65,8 @@ def do_exec(gui, filter, entry):
     if entry.get('output_win', False) is True:
         msg(output)
     elif entry.get('output_inline', False) is True:
-        # If we already sent some output to the inline console, add an empty
-        # line before the new contents.
-        output_text = gui.output.get(1.0, tkinter.END)
-        if len(output_text) > 1:
-            gui.output.insert(tkinter.END, "\n\n")
-
-        gui.output.insert(tkinter.END, output.rstrip())
-
-        # Scroll to end
-        gui.output.see(tkinter.END)
-
-        # Show the inline console, in case it was hidden.
-        gui.output_scrbr_y.grid(row=1, column=1, sticky="ns")
-        gui.output_scrbr_x.grid(row=2, column=0, sticky="we")
-        gui.output.grid(row=1, column=0, sticky="nsew")
+        gui.append_console_output(output)
+        # Do not quit the main gui
         return
 
     gui.quit()
@@ -319,6 +306,26 @@ class GUI:
 
     def quit(self, event=None):
         self.root.quit()
+
+    def append_console_output(self, output):
+        """
+        Append lines to the inline "console".
+        """
+        # If we already sent some output to the inline console, add an empty
+        # line before the new contents.
+        output_text = self.output.get(1.0, tkinter.END)
+        if len(output_text) > 1:
+            self.output.insert(tkinter.END, "\n\n")
+
+        self.output.insert(tkinter.END, output.rstrip())
+
+        # Scroll to end
+        self.output.see(tkinter.END)
+
+        # Show the inline console, in case it was hidden.
+        self.output_scrbr_y.grid(row=1, column=1, sticky="ns")
+        self.output_scrbr_x.grid(row=2, column=0, sticky="we")
+        self.output.grid(row=1, column=0, sticky="nsew")
 
     def report_callback_exception(self, *args):
         """
