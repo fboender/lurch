@@ -59,7 +59,7 @@ def do_exec(gui, filter, entry):
 
     # Clear filter typed by user
     if entry.get('clear_input', True) is True:
-        gui.filter_value.set("")
+        gui.clear_filter()
 
     # Display command output in seperate window, or in the inline console.
     if entry.get('output_win', False) is True:
@@ -326,6 +326,12 @@ class GUI:
         self.output_scrbr_y.grid(row=1, column=1, sticky="ns")
         self.output_scrbr_x.grid(row=2, column=0, sticky="we")
         self.output.grid(row=1, column=0, sticky="nsew")
+
+    def clear_filter(self):
+        """
+        Clear the input filter.
+        """
+        self.filter_value.set("")
 
     def report_callback_exception(self, *args):
         """
