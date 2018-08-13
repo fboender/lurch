@@ -319,8 +319,9 @@ class GUI:
 
         self.output.insert(tkinter.END, output.rstrip())
 
-        # Scroll to end
+        # Scroll to last line in output and to the left.
         self.output.see(tkinter.END)
+        self.output.xview_moveto(0)
 
         # Show the inline console, in case it was hidden.
         self.output_scrbr_y.grid(row=1, column=1, sticky="ns")
