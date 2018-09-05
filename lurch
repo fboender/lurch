@@ -144,8 +144,9 @@ class BaseGUI(QMainWindow):
 
 
 class Lurch(BaseGUI):
-    def __init__(self, entries, *args, **kwargs):
+    def __init__(self, entries, console_height, *args, **kwargs):
         self.entries = entries
+        self.console_height = console_height
         self.icons = {}
         BaseGUI.__init__(self, *args, **kwargs)
 
@@ -175,7 +176,6 @@ class Lurch(BaseGUI):
             """
         );
         self.mini_console.setWordWrapMode(QTextOption.NoWrap)
-        self.mini_console.hide()
         self.list = QListWidget(self);
         self.list.setStyleSheet(
             """
@@ -190,6 +190,7 @@ class Lurch(BaseGUI):
         self.central_widget.setLayout(self.layout)
         self.splitter.addWidget(self.mini_console)
         self.splitter.addWidget(self.list)
+        self.splitter.setSizes([0, 1])
         self.layout.setContentsMargins(0, 0, 0, 0);
         self.layout.addWidget(self.filter)
         self.layout.addWidget(self.splitter)
@@ -226,6 +227,9 @@ class Lurch(BaseGUI):
         self.populate_list()
 
     def append_console_output(self, output):
+        sizes = self.splitter.sizes()
+        self.splitter.setSizes([self.console_height, sizes[1] - self.console_height])
+        self.splitter.refresh()
         self.mini_console.moveCursor(QTextCursor.End)
         self.mini_console.insertHtml("<code>{}<br></code>".format(output))
 
@@ -254,7 +258,6 @@ class Lurch(BaseGUI):
         self.populate_list(text)
 
     def _ev_return_pressed(self):
-        self.mini_console.show()
         cur_item = self.list.currentItem().text()
         filter = self.filter.text()
 
@@ -320,12 +323,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--width', metavar='WIDTH', dest='width', type=int, default=500)
     parser.add_argument('--height', metavar='HEIGHT', dest='height', type=int, default=600)
-    parser.add_argument('--console-lines', metavar='CONSOLE_LINES', dest='console_lines', type=int, default=6)
+    parser.add_argument('--console-height', metavar='CONSOLE_HEIGHT', dest='console_height', type=int, default=70)
     args = parser.parse_args()
 
     app = Lurch(read_entries(sys.stdin.readlines()),
+                args.console_height,
                 "electricmonk",
                 "lurch",
                 sys.argv,
-                icon=os.path.join(os.path.dirname(sys.argv[0]), 'icon.png'))
+                icon=os.path.join(os.path.dirname(sys.argv[0]), 'icon.png'),
+                )
     app.run()
