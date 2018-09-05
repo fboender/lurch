@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 
-import os
 import argparse
+import signal
 import sys
-import json
-import tkinter as tk
-import traceback
+import os
 import subprocess
-import tkinter.messagebox
 import time
+import webbrowser
+from PyQt5.Qt import *
+from pynput.keyboard import Key, Controller
+import pyotp
 
 
 def do_autotype(gui, filter, entry):
     """
     Auto type value into the currently focusses window.
     """
-    from pynput.keyboard import Key, Controller
-    gui.win_hide()
+    gui.hide()
     keyboard = Controller()
     keyboard.type(entry['value'])
     time.sleep(0.2)
@@ -30,7 +30,6 @@ def do_browser(gui, filter, entry):
     """
     Open value in browser. {q} is replaced with the filter typed by the user.
     """
-    import webbrowser
     url = entry["value"].format(filter=filter)
     webbrowser.open_new_tab(url)
     gui.quit()
@@ -65,7 +64,7 @@ def do_exec(gui, filter, entry):
     if entry.get('output_win', False) is True:
         msg(output)
     elif entry.get('output_inline', False) is True:
-        gui.append_console_output(output)
+        gui.append_console_output(output.decode('utf8'))
         # Do not quit the main gui
         return
 
@@ -76,11 +75,9 @@ def do_totp(gui, filter, entry):
     Generate TOTP / rfc6238 / two-factor / Google Authenticator authentication
     codes, and autotype them.
     """
-    import pyotp
-    from pynput.keyboard import Key, Controller
     totp = pyotp.TOTP(entry["value"])
     code = totp.now()
-    gui.win_hide()
+    gui.hide()
     keyboard = Controller()
     keyboard.type(code)
     gui.quit()
@@ -93,146 +90,123 @@ do_mapper = {
     "totp": do_totp,
 }
 
+class BaseGUI(QMainWindow):
+    def __init__(self, app_vendor, app_name, args, icon=None, toolbar_items=None):
+        self.app_vendor = app_vendor
+        self.app_name = app_name
+        self.args = args
+        self.icon = icon
+        self.toolbar_items = toolbar_items
 
-def msg(value):
-    """
-    Show a popup message window with a 'console'.
-    """
-    root = tkinter.Tk()
-    root.title("Output")
-    def quiet():
-        sys.exit(0)
-    text = tkinter.Text(root, height=25, width=80, bg="black", fg="white", relief=tkinter.FLAT)
-    text.insert(tkinter.END, value)
-    scrollbar = tkinter.Scrollbar(root)
-    scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
-    scrollbar.config(command=text.yview)
-    text.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.YES)
-    text.config(yscrollcommand=scrollbar.set)
-    root.bind("<Escape>", quit)
-    tkinter.mainloop()
+        # Make sure ctrl-c on the commandline stops the application
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        self.app = QApplication(args)
+        self.settings = QSettings(self.app_vendor, self.app_name)
+        self.central_widget = QWidget()
+
+        QMainWindow.__init__(self)
+        self.setWindowTitle(self.app_name)
+        if self.icon is not None:
+            self.setWindowIcon(QIcon(self.icon))
+        geometry = self.settings.value("geometry")
+        if geometry is not None:
+            self.restoreGeometry(geometry);
+        self.setCentralWidget(self.central_widget)
+
+        # Create toolbar
+        if self.toolbar_items is not None:
+            self.toolbar = self.addToolBar('toolbar')
+            for toolbar_item in self.toolbar_items:
+                action = QAction(QIcon.fromTheme(toolbar_item["icon"]),
+                                 toolbar_item["label"],
+                                 self)
+                action.setData(toolbar_item["id"])
+                if toolbar_item["type"] == "check":
+                    action.setCheckable(True)
+                if toolbar_item["shortcut"] is not None:
+                    action.setShortcut(toolbar_item["shortcut"])
+                event_cb = getattr(self, "_ev_{}".format(toolbar_item["event"]))
+                action.triggered.connect(event_cb)
+                self.toolbar.addAction(action)
+
+    def run(self):
+        self.show()
+        self.app.exec_()
+
+    def quit(self):
+        self.settings.setValue("geometry", self.saveGeometry())
+        self.settings.sync()
+        QCoreApplication.quit()
+
+    def closeEvent(self, event):
+        self.quit()
 
 
-class AutoScrollbar(tkinter.Scrollbar):
-    # a scrollbar that hides itself if it's not needed.  only
-    # works if you use the grid geometry manager.
-    def set(self, lo, hi):
-        if float(lo) <= 0.0 and float(hi) >= 1.0:
-            # grid_remove is currently missing from Tkinter!
-            self.tk.call("grid", "remove", self)
-        else:
-            self.grid()
-        tkinter.Scrollbar.set(self, lo, hi)
-
-
-class GUI:
-    """
-    Main Lurch GUI.
-    """
-    def __init__(self, width, height, console_lines, entries):
-        self.width = width
-        self.height = height
-        self.console_lines = console_lines
+class Lurch(BaseGUI):
+    def __init__(self, entries, *args, **kwargs):
         self.entries = entries
-        self.visible = False
-        self.cur_entries = entries
+        self.icons = {}
+        BaseGUI.__init__(self, *args, **kwargs)
 
-        self.root = tkinter.Tk()
-        self.root.title("Lurch - You rang?")
-        imgicon = tkinter.PhotoImage(file=self._get_icon_path())
-        self.root.tk.call('wm', 'iconphoto', self.root._w, imgicon)
-        self.root.geometry('{}x{}'.format(self.width, self.height))
-        self.root.report_callback_exception = self.report_callback_exception
+        self.filter = QLineEdit()
+        self.filter.setStyleSheet(
+            """
+                QLineEdit {
+                    background: #252525;
+                    color: #FFFFFF;
+                    font-size: 16px;
+                    border-radius: 0px;
+                    padding: 10px;
+                }
+            """
+        );
+        self.splitter = QSplitter(Qt.Vertical)
+        self.mini_console = QTextEdit()
+                    #font-family: monospace;
+        self.mini_console.setStyleSheet(
+            """
+                QTextEdit {
+                    background: #000000;
+                    color: #FFFFFF;
+                    border-radius: 0px;
+                    padding: 10px;
+                }
+            """
+        );
+        self.mini_console.setWordWrapMode(QTextOption.NoWrap)
+        self.mini_console.hide()
+        self.list = QListWidget(self);
+        self.list.setStyleSheet(
+            """
+                QListWidget {
+                    font-size: 16px;
+                }
+            """
+        );
+        self.populate_list()
+        self.layout = QVBoxLayout()
+        self.layout.setSpacing(0)
+        self.central_widget.setLayout(self.layout)
+        self.splitter.addWidget(self.mini_console)
+        self.splitter.addWidget(self.list)
+        self.layout.setContentsMargins(0, 0, 0, 0);
+        self.layout.addWidget(self.filter)
+        self.layout.addWidget(self.splitter)
+        self.filter.textEdited.connect(self._ev_text_edited)
+        self.filter.textEdited.connect(self._ev_text_edited)
+        self.filter.returnPressed.connect(self._ev_return_pressed)
+        self.list.itemActivated.connect(self._ev_return_pressed)
+        self.keyPressEvent = self._ev_key_press
+        self.filter.setFocus()
 
-        self.frame = tk.Frame(self.root, borderwidth=0, relief="flat")
-        self._mkwidget_filter()
-        self._mkwidget_output(console_lines)
-        self._mkwidget_results()
-
-        self.frame.grid_rowconfigure(0, weight=0)
-        self.frame.grid_rowconfigure(1, weight=0)
-        self.frame.grid_rowconfigure(2, weight=0)
-        self.frame.grid_rowconfigure(3, weight=1)
-        self.frame.grid_columnconfigure(0, weight=1)
-
-        self.set_entries("")
-
-        self.root.bind("<Escape>", self.quit)
-        self.filter.bind("<Up>", self._results_cursor_up)
-        self.filter.bind("<Control-k>", self._results_cursor_up)
-        self.filter.bind("<Down>", self._results_cursor_down)
-        self.filter.bind("<Control-j>", self._results_cursor_down)
-        self.filter.bind("<Return>", self._results_activate)
-        self.results.bind("<Return>", self._results_activate)
-        self.results.bind('<Double-1>', self._results_activate)
-
-        self.frame.pack(side="top", fill="both", expand=True)
-        self.root.mainloop()
-
-    def _mkwidget_filter(self):
-        self.filter_value = tk.StringVar()
-        self.filter_value.trace("w", lambda name, index, mode: self._input_activate())
-        self.filter = tk.Entry(self.frame, textvariable=self.filter_value,
-                               font=("Sans", 12), bg="gray15", fg="white",
-                               relief="flat", bd=8, insertbackground="white")
-        self.filter.grid(row=0, columnspan=2, sticky="ew")
-        self.filter.focus()
-
-    def _mkwidget_output(self, console_lines=6):
-        self.output_scrbr_x = AutoScrollbar(self.frame, orient="horizontal")
-        self.output_scrbr_y = tk.Scrollbar(self.frame, orient="vertical")
-        self.output = tk.Text(self.frame, width=20, height=console_lines,
-                              wrap="none", borderwidth=8, highlightthickness=0,
-                              bg="black", fg="white", bd=8, relief="flat",
-                              xscrollcommand=self.output_scrbr_x.set,
-                              yscrollcommand=self.output_scrbr_y.set)
-        self.output_scrbr_x.config(command=self.output.xview)
-        self.output_scrbr_y.config(command=self.output.yview)
-
-    def _mkwidget_results(self):
-        self.results = tk.Listbox(self.frame, selectmode=tk.BROWSE,
-                                  font=("Sans", 12), bd=8, relief=tk.FLAT,
-                                  exportselection=0)
-        self.results_scrbr = tk.Scrollbar(self.frame, orient="vertical",
-                                          command=self.results.yview)
-        self.results.configure(yscrollcommand=self.results_scrbr.set)
-        self.results.grid(row=3, column=0, sticky="nsew")
-        self.results_scrbr.grid(row=3, column=1, sticky="ns")
-
-    def _get_icon_path(self):
-        """
-        Return absolute path to icon, derefenced from the location of this
-        'binary'.
-        """
-        if os.path.islink(sys.argv[0]):
-            bin_path = os.readlink(sys.argv[0])
-        else:
-            bin_path = sys.argv[0]
-
-        path = '{}/icon.png'.format(
-            os.path.realpath(os.path.dirname(bin_path))
-        )
-        return path
-
-    def _input_activate(self):
-        """
-        When the input field is activcated (enter or double click), perform the
-        action under the cursor.
-        """
-        filter_value = self.filter_value.get()
-        self.set_entries(self.filter_value.get())
-
-    def set_entries(self, text):
-        """
-        Update the list of entries in Lurch and fuzzy-filter the entries based
-        on what the user typed so far.
-        """
-        self.results.delete(0, tk.END)
+    def populate_list(self, filter=""):
+        self.list.clear()
 
         match_entries = self.entries
-        if text != "":
-            # Filter entries
-            parts = text.lower().split(' ')
+
+        if filter != "":
+            parts = filter.lower().split(' ')
             for part in parts:
                 match_entries = [
                     entry for entry in match_entries
@@ -241,106 +215,70 @@ class GUI:
                 ]
 
         for entry in match_entries:
-            self.results.insert(tk.END, entry["title"])
+            item = QListWidgetItem(self._get_entry_icon(entry),
+                                   entry["title"],
+                                   self.list);
 
-        # Activate first item
-        if not self.results.curselection():
-            self.results.activate(0)
-            self.results.selection_set(0)
-
-    def _results_activate(self, event):
-        try:
-            try:
-                cursel = self.results.curselection()[0]
-            except IndexError:
-                return
-            cur_item = self.results.get(cursel)
-            filter = self.filter.get()
-            entry_search = cur_item
-
-            for entry in self.cur_entries:
-                if entry["title"] == entry_search:
-                    method = do_mapper[entry['type']]
-                    method(self, filter, entry)
-        except Exception as err:
-            raise
-
-    def _results_move_cur(self, i):
-        """
-        Move the entries cursor.
-        """
-        self.results.activate(i)
-        self.results.selection_clear(0, tk.END)
-        self.results.selection_set(i)
-        self.results.see(i)
-
-    def _results_cursor_up(self, event):
-        """
-        Move result pane cursor one up. Wrap around if top is hit.
-        """
-        cursel = self.results.curselection()[0]
-        if cursel == 0:
-            self._results_move_cur(tk.END)
-            return "break"
-        else:
-            self._results_move_cur(cursel - 1)
-
-    def _results_cursor_down(self, event):
-        """
-        Move result pane cursor one down. Wrap around if bottom is hit.
-        """
-        cursel = self.results.curselection()[0]
-        end = len(self.results.get(0, tk.END))
-        if cursel == end - 1:
-            self._results_move_cur(0)
-            return "break"
-        else:
-            self._results_move_cur(cursel + 1)
-
-    def win_hide(self):
-        """
-        Hide the window.
-        """
-        self.root.withdraw()
-        self.visible = False
-
-    def quit(self, event=None):
-        self.root.quit()
-
-    def append_console_output(self, output):
-        """
-        Append lines to the inline "console".
-        """
-        # If we already sent some output to the inline console, add an empty
-        # line before the new contents.
-        output_text = self.output.get(1.0, tkinter.END)
-        if len(output_text) > 1:
-            self.output.insert(tkinter.END, "\n\n")
-
-        self.output.insert(tkinter.END, output.rstrip())
-
-        # Scroll to last line in output and to the left.
-        self.output.see(tkinter.END)
-        self.output.xview_moveto(0)
-
-        # Show the inline console, in case it was hidden.
-        self.output_scrbr_y.grid(row=1, column=1, sticky="ns")
-        self.output_scrbr_x.grid(row=2, column=0, sticky="we")
-        self.output.grid(row=1, column=0, sticky="nsew")
+        self.list.setCurrentRow(0)
 
     def clear_filter(self):
-        """
-        Clear the input filter.
-        """
-        self.filter_value.set("")
+        self.filter.clear()
+        self.populate_list()
 
-    def report_callback_exception(self, *args):
-        """
-        Show thrown exceptions in tkinter's main loop in a dialog
-        """
-        err = traceback.format_exception(*args)
-        tkinter.messagebox.showerror('Exception', str(args[1]))
-        raise
+    def append_console_output(self, output):
+        self.mini_console.moveCursor(QTextCursor.End)
+        self.mini_console.insertHtml("<code>{}<br></code>".format(output))
+
+    def cursor_up(self):
+        if self.list.currentRow() == 0:
+            self.list.setCurrentRow(self.list.count() - 1)
+        else:
+            self.list.setCurrentRow(self.list.currentRow() - 1)
+
+    def cursor_down(self):
+        if self.list.currentRow() == self.list.count() - 1:
+            self.list.setCurrentRow(0)
+        else:
+            self.list.setCurrentRow(self.list.currentRow() + 1)
+
+    def _get_entry_icon(self, entry):
+        icon_name = entry.get("icon", None)
+        if icon_name is not None:
+            if icon_name not in self.icons:
+                self.icons[icon_name] = QIcon("icons/{}.png".format(icon_name))
+            return self.icons[icon_name]
+        else:
+            return QIcon("icons/json.png")
+
+    def _ev_text_edited(self, text):
+        self.populate_list(text)
+
+    def _ev_return_pressed(self):
+        self.mini_console.show()
+        cur_item = self.list.currentItem().text()
+        filter = self.filter.text()
+
+        for entry in self.entries:
+            if entry["title"] == cur_item:
+                method = do_mapper[entry['type']]
+                method(self, filter, entry)
+                return
+
+    def _ev_key_press(self, key_event):
+        key = key_event.key()
+        modifiers = key_event.modifiers()
+
+        if key == Qt.Key_Escape:
+            self.quit()
+        elif key == Qt.Key_Up:
+            self.cursor_up()
+        elif key == Qt.Key_Down:
+            self.cursor_down()
+        elif key == Qt.Key_K and (modifiers & Qt.ControlModifier == Qt.ControlModifier):
+            self.cursor_up()
+        elif key == Qt.Key_J and (modifiers & Qt.ControlModifier == Qt.ControlModifier):
+            self.cursor_down()
+
 
 def read_entries(lines):
     """
@@ -377,6 +315,7 @@ def read_entries(lines):
 
     return entries
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--width', metavar='WIDTH', dest='width', type=int, default=500)
@@ -384,4 +323,9 @@ if __name__ == "__main__":
     parser.add_argument('--console-lines', metavar='CONSOLE_LINES', dest='console_lines', type=int, default=6)
     args = parser.parse_args()
 
-    gui = GUI(args.width, args.height, args.console_lines, read_entries(sys.stdin.readlines()))
+    app = Lurch(read_entries(sys.stdin.readlines()),
+                "electricmonk",
+                "lurch",
+                sys.argv,
+                icon=os.path.join(os.path.dirname(sys.argv[0]), 'icon.png'))
+    app.run()

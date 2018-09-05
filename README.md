@@ -16,13 +16,13 @@ sub-lurches.
 constraints, I don't take bug reports or feature requests and probably won't
 accept your pull requests.**
 
-This is what it looks like. Ugly, but effective.
+This is what it looks like. Ugly, but effective. It has a tiny embedded
+console that's not really a console but just a text widget. Specify
+`output_inline` to send command output to it. This keeps the window open.
 
 ![](https://raw.githubusercontent.com/fboender/lurch/master/screenshot.png)
 
-It also has a tiny embedded console that's not really a console but just a
-text widget. Specify `output_inline` to send command output to it. This keeps
-the window open.
+Fuzzy Filtering:
 
 ![](https://raw.githubusercontent.com/fboender/lurch/master/screenshot2.png)
 
@@ -56,8 +56,8 @@ You can use and combine these features to do many things:
 ## Requirements
 
 * A window manager that lets you launch applications through a keybinding.
-* Python v3.4
-* Python Tkinter
+* Python v3.4+
+* Python QT5
 * Some python libs (see `requirements.txt`)
 
 
@@ -66,7 +66,7 @@ You can use and combine these features to do many things:
     git clone git@github.com:fboender/lurch.git
     cd lurch
     sudo pip3 install -r requirements.txt
-    sudo apt install python3-tk
+    sudo apt install python3-pyqt5
     make install
 
 If `pynput` installation borks, download the .egg from
