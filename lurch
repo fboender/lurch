@@ -231,7 +231,7 @@ class Lurch(BaseGUI):
         self.splitter.setSizes([self.console_height, sizes[1] - self.console_height])
         self.splitter.refresh()
         self.mini_console.moveCursor(QTextCursor.End)
-        self.mini_console.insertHtml("<code>{}<br></code>".format(output))
+        self.mini_console.insertHtml("<code>{}<br></code>".format(output.replace("\n", "<br>")))
 
     def cursor_up(self):
         if self.list.currentRow() == 0:
