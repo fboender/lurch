@@ -67,7 +67,7 @@ You can use and combine these features to do many things:
     cd lurch
     sudo pip3 install -r requirements.txt
     sudo apt install python3-pyqt5
-    make install
+    sudo bash ". rules.sla && install"
 
 If `pynput` installation borks, download the .egg from
 https://pypi.python.org/pypi/pynput, unzip it and copy the `pynput` dir to
