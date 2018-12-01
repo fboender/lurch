@@ -198,7 +198,14 @@ class Lurch(BaseGUI):
         self.filter.textEdited.connect(self._ev_text_edited)
         self.filter.returnPressed.connect(self._ev_return_pressed)
         self.list.itemActivated.connect(self._ev_return_pressed)
-        self.keyPressEvent = self._ev_key_press
+
+        # Setup keybindings
+        QShortcut(QKeySequence("Escape"), self).activated.connect(self.quit)
+        QShortcut(QKeySequence("Up"), self).activated.connect(self.cursor_up)
+        QShortcut(QKeySequence("Ctrl+k"), self).activated.connect(self.cursor_up)
+        QShortcut(QKeySequence("Down"), self).activated.connect(self.cursor_down)
+        QShortcut(QKeySequence("Ctrl+j"), self).activated.connect(self.cursor_down)
+
         self.filter.setFocus()
 
     def populate_list(self, filter=""):
@@ -266,21 +273,6 @@ class Lurch(BaseGUI):
                 method = do_mapper[entry['type']]
                 method(self, filter, entry)
                 return
-
-    def _ev_key_press(self, key_event):
-        key = key_event.key()
-        modifiers = key_event.modifiers()
-
-        if key == Qt.Key_Escape:
-            self.quit()
-        elif key == Qt.Key_Up:
-            self.cursor_up()
-        elif key == Qt.Key_Down:
-            self.cursor_down()
-        elif key == Qt.Key_K and (modifiers & Qt.ControlModifier == Qt.ControlModifier):
-            self.cursor_up()
-        elif key == Qt.Key_J and (modifiers & Qt.ControlModifier == Qt.ControlModifier):
-            self.cursor_down()
 
 
 def read_entries(lines):
