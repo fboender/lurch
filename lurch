@@ -112,6 +112,8 @@ class BaseGUI(QMainWindow):
         geometry = self.settings.value("geometry")
         if geometry is not None:
             self.restoreGeometry(geometry);
+        else:
+            self.setFixedSize(450, 600)
         self.setCentralWidget(self.central_widget)
 
         # Create toolbar
