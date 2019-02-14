@@ -109,11 +109,7 @@ class BaseGUI(QMainWindow):
         self.setWindowTitle(self.app_name)
         if self.icon is not None:
             self.setWindowIcon(QIcon(self.icon))
-        geometry = self.settings.value("geometry")
-        if geometry is not None:
-            self.restoreGeometry(geometry);
-        else:
-            self.setFixedSize(450, 600)
+        self.setFixedSize(450, 600)
         self.setCentralWidget(self.central_widget)
 
         # Create toolbar
@@ -137,8 +133,6 @@ class BaseGUI(QMainWindow):
         self.app.exec_()
 
     def quit(self):
-        self.settings.setValue("geometry", self.saveGeometry())
-        self.settings.sync()
         QCoreApplication.quit()
 
     def closeEvent(self, event):
