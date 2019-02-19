@@ -109,7 +109,7 @@ class BaseGUI(QMainWindow):
         self.setWindowTitle(self.app_name)
         if self.icon is not None:
             self.setWindowIcon(QIcon(self.icon))
-        self.setFixedSize(450, 600)
+        self.setMinimumSize(450, 600)
         self.setCentralWidget(self.central_widget)
 
         # Create toolbar
