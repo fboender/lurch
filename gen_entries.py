@@ -21,7 +21,7 @@ def entry(type, title, value, **options):
                                                   value))
     for option_key, option_value in options.items():
         print("{}: {}".format(option_key, option_value))
-    print()
+    print
 
 # Passwords
 entry("autotype", "pass example.com ssh", "mys3cr3t")
@@ -70,6 +70,7 @@ try:
         host, title = line_utf[14:].strip().split(' ', 1)
         entry("exec", "win {}".format(title), "wmctrl -a '{}'".format(title), shell=True)
 except Exception as err:
+    raise
     sys.stderr.write(err)
 
 #TOTP / rfc6238 / two-factor / Google Authenticator
