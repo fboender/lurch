@@ -282,7 +282,7 @@ def read_entries(lines):
     entries = []
     cur_entry = {}
     for line in lines:
-        line = line.strip()
+        line = line.strip("\n")
         try:
             if line == "":
                 # End of current entry. Make sure the user has specified all
@@ -292,7 +292,7 @@ def read_entries(lines):
                 cur_entry = {}
             else:
                 # Additional key/value for current entry.
-                key, value = [part.strip() for part in line.split(":", 1)]
+                key, value = [part.lstrip() for part in line.split(":", 1)]
                 if key in bool_keys:
                     cur_entry[key] = {"true": True, "false": False}[value.lower()]
                 else:
