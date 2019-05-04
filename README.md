@@ -129,6 +129,9 @@ Each item in the list takes a few default keys:
 
 The types should speak for themselves. Some take extra options:
 
+* **`autotype`**:
+    * `enter`: Whether to press the `<Enter>` key after typing the value. Defaults to `true`.
+
 * **`exec`**:
     * `shell`: Launch the command in a shell. Defaults to `false`.
     * `output_win`: Display output of command in popup window. Defaults to `false`.

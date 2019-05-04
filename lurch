@@ -19,11 +19,12 @@ def do_autotype(gui, filter, entry):
     gui.hide()
     keyboard = Controller()
     keyboard.type(entry['value'])
-    time.sleep(0.2)
-    keyboard.press(Key.enter)
-    time.sleep(0.2)
-    keyboard.release(Key.enter)
-    time.sleep(0.2)
+    if 'enter' not in entry or entry['enter'] is True:
+        time.sleep(0.2)
+        keyboard.press(Key.enter)
+        time.sleep(0.2)
+        keyboard.release(Key.enter)
+        time.sleep(0.2)
     gui.quit()
 
 def do_browser(gui, filter, entry):
@@ -276,7 +277,7 @@ def read_entries(lines):
     Parse `lines` (stdin, usually) into actual entries that lurch can use.
     Entries are separated with two newlines in `lines` (a.k.a. one empty line).
     """
-    bool_keys = ("shell", "always", "output_win", "output_inline", "clear_input")
+    bool_keys = ("shell", "always", "output_win", "output_inline", "clear_input", "enter")
     required_keys = ("type", "title", "value")
     entries = []
     cur_entry = {}
