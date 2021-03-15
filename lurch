@@ -253,7 +253,7 @@ class Lurch(BaseGUI):
         icon_name = entry.get("icon", None)
         if icon_name is not None:
             if icon_name not in self.icons:
-                self.icons[icon_name] = QIcon("icons/{}.png".format(icon_name))
+                self.icons[icon_name] = QIcon("/usr/local/lib/lurch/icons/{}.png".format(icon_name))
             return self.icons[icon_name]
         else:
             return QIcon("icons/json.png")
