@@ -17,7 +17,7 @@ install () {
     mkdir -p $PREFIX_LIB/$PROG/icons
     env install -m 755 $PROG $PREFIX_LIB/$PROG/$PROG
     env install -m 644 icon.png $PREFIX_LIB/$PROG/icon.png
-    env install -t $PREFIX_LIB/$PROG/icons icons/*
+    env install -m 644 -t $PREFIX_LIB/$PROG/icons icons/*
     env install -m 755 gen_entries.py $PREFIX_LIB/$PROG/gen_entries.py
     ln -f -s $PREFIX_LIB/$PROG/lurch $PREFIX_BIN/
 
